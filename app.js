@@ -1,38 +1,78 @@
 // Configure access to .env file; default config is to look for .env file in root directory: { path: './.env' }
 require('dotenv').config();
-const express = require("express");
 const port = process.env.PORT || 3000;
+// Express
+const express = require("express");
 const app = express();
+// For parsing application/json
+app.use(express.json()) 
 
+// Mongoose to access MongoDB
+const mongoose = require("mongoose");
+mongoose.connect(process.env.MONGO_URI, { 
+    useNewUrlParser: true,       // Use new URL parser
+    useUnifiedTopology: true   // Use new server discovery and monitoring engine
+});
+// Connect our database via mongoose's connection method
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "MongoDB connection error:"));
+db.once("open", () => { console.log("MongoDB connected successfully") });
+// Schemas
+const User = require("./dbModels/user");
+
+// CORS
 const cors = require("cors");
 app.use(cors());
 
-// app.use(express.static('public'));
-
-// Trefle Client
+// External/Upstream Clients
 const TreffleClient = require('./clients/trefleClient');
 const trefleClient = new TreffleClient(process.env.TREFLE_BASE_URL, process.env.TREFLE_TOKEN);
-
+const PerenualClient = require('./clients/perenualClient');
+const perenualClient = new PerenualClient(process.env.PERENUAL_BASE_URL, process.env.PERENUAL_KEY);
 
 app.get('/', (req, res) => {
     res.send('Welcome to the Plant API!')
 });
 
+// Users
+app.get('/users', (req, res) => {
+    User.find()
+    .then(users => res.json(users))
+    .catch(error => res.status(500).send(error));
+});
+            
+app.post('/users', (req, res) => {
+    const user = new User(req.body);
+    user.save()
+    .then(user => res.status(201).send(user))
+    .catch(error => res.status(400).send(error));
+});
+
+// Plants
 app.get('/search', (req, res) => {
-    console.log(req.query);
-    if (req.query.q === undefined || req.query.q === '') {
-        res.status(400).send('Bad Request. Please enter a valid query');
-    }
-    trefleClient.searchPlants(req.query.q, req.query.page)
+    perenualClient.searchPlants(req.query.q, req.query.page)
     .then(response => {
-        console.log("received response data: ", response.data !== undefined);
+        console.log("Received search data: ", response.data !== undefined);
         response.data && res.json(response)
     })
     .catch(error => {
-        console.log("received error: ", error.config);
+        console.log("Received search error: ", error);
         res.status(500).send(error)
     });
-})
+});
+
+app.post('/plants', (req, res) => {
+    const plant = new Plant(req.body);
+    // TODO: check if plant already in DB
+    plant.save()
+    .then(plant => res.status(201).send(plant))
+    .catch(error => res.status(400).send(error));
+});
+
+// Catch-all route for undefined routes
+app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
