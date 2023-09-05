@@ -11,11 +11,16 @@ const gardenSchema = new mongoose.Schema({
         maxLength: 100,
         required: true,
     },
+    description: {
+        type: String,
+        maxLength: 2000,
+    },
     plants: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Plant",
+        unique: true,
     }],
-});
+}, { strict: true });
 
 const Garden = mongoose.model("Garden", gardenSchema);
 

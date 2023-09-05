@@ -7,7 +7,7 @@ class PlantResponse {
 
     static fromTrefleResponse(plantData) {
         const plantResponse = new PlantResponse();
-        plantResponse.id = plantData.id
+        plantResponse.refId = plantData.id
         plantResponse.imageUrls.defaultlUrl = plantData.image_url || ''
         plantResponse.commonName = plantData.common_name
         plantResponse.scientificName = plantData.scientific_name
@@ -16,7 +16,7 @@ class PlantResponse {
 
     static fromPerenualResponse(plantData) {
         const plantResponse = new PlantResponse();
-        plantResponse.id = plantData.id
+        plantResponse.refId = plantData.id
         if (plantData.default_image){
             plantResponse.imageUrls.defaultlUrl = plantData.default_image.regular_url
             plantResponse.imageUrls.smallUrl = plantData.default_image.small_url
@@ -28,6 +28,7 @@ class PlantResponse {
         plantResponse.scientificName = plantData.scientific_name[0]
         return plantResponse;
     }
+
 }
 
 module.exports = PlantResponse;

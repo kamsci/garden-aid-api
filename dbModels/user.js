@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         maxLength: 100,
         required: true,
+        unique: true,
     },
     firstName: {
         type: String,
@@ -16,7 +17,8 @@ const userSchema = new mongoose.Schema({
         maxLength: 100,
         required: true,
     },
-});
+}, { strict: true })
+.index({ lastName: 1, firstName: 1 });
 
 const User = mongoose.model("User", userSchema);
 

@@ -25,6 +25,9 @@ const User = require("./dbModels/user");
 const Plant = require("./dbModels/plant");
 const Garden = require("./dbModels/garden");
 
+// Response Models
+const PlantsResponse = require("./apiModels/plantsResponse");
+
 // CORS
 const cors = require("cors");
 app.use(cors());
@@ -39,9 +42,23 @@ app.get('/', (req, res) => {
     res.send('Welcome to the Plant API!')
 });
 
+const USER_PAGE_LIMIT = 5;
+
 // Users
 app.get('/users', (req, res) => {
-    User.find()
+    // TODO: add pagination using cursor query.. but figure out how to maintain pagingation cursor for client
+    //      redis cache to save cursor position related to a page number and allow client to pass search query id + page?
+    //      Or just have user pass last cursor...
+    //      getPaginatedResults(cursor, pageSize).then((results) => {
+    //   console.log('Page 1:', results);
+    //   const lastCursor = results[results.length - 1]._id;
+
+    //   // To get the next page, use the last cursor from the previous page
+    //   getPaginatedResults(lastCursor, pageSize).then((nextPageResults) => {
+    //     console.log('Page 2:', nextPageResults);
+    //   });
+    // query = { _id: { $gt: cursor } }; // Assuming _id is used as the cursor
+    User.find().sort({lastName: 1, firstName: 1}).limit(USER_PAGE_LIMIT)
     .then(users => res.json(users))
     .catch(error => res.status(500).send(error));
 });
@@ -66,11 +83,34 @@ app.get('/search', (req, res) => {
     });
 });
 
-app.post('/plants', (req, res) => {
-    const plant = new Plant(req.body);
-    // TODO: check if plant already in DB
-    plant.save()
-    .then(plant => res.status(201).json(plant))
+app.get('/plants', (req, res) => {
+    Plant.countDocuments()
+    .then(count => {
+        Plant.find() // .sort({scientificName: 1}).limit(PlantsResponse.UI_PER_PAGE)
+        .then(plants => {
+            const response = PlantsResponse.fromDbResponse(plants, count);
+            res.send(response);
+        })
+        .catch(error => {
+            console.log("Received plant error: ", error);
+            res.status(500).send("Error getting plants")
+        });
+    })
+    .catch(e => {
+        console.log("Received plant count error: ", e);
+        res.status(500).send("Error getting plants.")
+    })
+});
+
+app.get('/plants/:plantId', (req, res) => {
+    Plant.find({_id: req.params.plantId})
+    .then(users => res.json(users))
+    .catch(error => res.status(500).send(error));
+});
+
+app.delete('/plants/:plantId', (req, res) => {
+    Plant.findByIdAndDelete(req.params.plantId)
+    .then(plant => res.status(200).json(plant))
     .catch(error => res.status(500).send(error));
 });
 
@@ -96,7 +136,7 @@ app.post('/gardens/users', (req, res) => {
     try {
      garden = new Garden(req.body);
     } catch(error) {
-        console.log("Received garden search error:", error)
+        console.log("Received garden create error:", error)
         res.status(400).json({ error: 'Invalid garden' });
     }
     garden.save()
@@ -106,7 +146,61 @@ app.post('/gardens/users', (req, res) => {
 
 app.delete('/gardens/:gardenId', (req, res) => {
     Garden.findByIdAndDelete(req.params.gardenId)
-    .then(() => res.status(200))
+    .then(() => res.status(201))
+    .catch(error => res.status(400).json(error));
+});
+
+// Plants in Garden
+app.get('/gardens/:gardenId/plants', (req, res) => {
+    console.log('Get plants by gardenId:', req.params.gardenId);
+    Garden.findById(req.params.gardenId)
+    .populate('plants')
+    .then(garden => res.json(garden))
+    .catch(error => res.status(500).json(error));
+});
+
+app.post('/gardens/:gardenId/plants', async (req, res) => {
+    // Check if plants already exist in DB
+    Plant.exists({refId: req.body.refId})
+    .then(existingPlant => {
+        if (existingPlant) {
+            console.log("Plant already exists in DB:", existingPlant);
+            // Add existing plant to garden
+            Garden.findByIdAndUpdate(req.params.gardenId, {
+                $push: { plants: existingPlant._id }
+            })
+            .then((response) => res.status(200).json(response))
+            .catch(error => res.status(400).json({ error }));
+        } else {
+            // Plant does not exist in DB; save plant to DB
+            const plantInfo = {...req.body, infoUrls: PerenualClient.createInfoUrls(req.body.refId)};
+            const newPlant = new Plant(plantInfo);
+            console.log("Plant does not exist in DB; Saving plant to DB:", newPlant);
+            newPlant.save()
+                .then(plant => {
+                    console.log("Plant saved to DB:", plant);
+                    // Add new plant to garden
+                    Garden.findByIdAndUpdate(req.params.gardenId, {
+                        $push: { plants: plant._id }
+                    })
+                    .then((response) => res.status(200).json(response))
+                    .catch(error => res.status(400).json({ error }));
+                })
+                // Save failed, could be due to validation or server error
+                // TODO: figure out how to distinguish between validation and server error
+                .catch(error => res.status(400).json({ error }));
+        }
+    })
+    // Find failed, could be due to invalid ID or server error
+    .catch(error => res.status(400).json({ error }));
+});
+
+app.delete('/gardens/:gardenId/plants/:plantId', (req, res) => {
+    Garden.updateOne(
+        { _id: req.params.gardenId },
+        { $pull: { plants: req.params.plantId } }
+    )
+    .then((result) => res.status(201))
     .catch(error => res.status(400).json(error));
 });
 
@@ -117,4 +211,4 @@ app.use((req, res) => {
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
-})
+});

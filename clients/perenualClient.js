@@ -20,6 +20,13 @@ class PerenualClient extends Client {
             return(PlantsResponse.fromPerenualResponse(response.data));
         })
     }
+
+    static createInfoUrls(plantId) {
+        return {
+           details: "https://perenual.com/api/species/details/" + plantId,
+           careGuide: "https://perenual.com/api/species/care-guide-list?species_id=" + plantId,
+        };
+    }
 }
 
 module.exports = PerenualClient;
