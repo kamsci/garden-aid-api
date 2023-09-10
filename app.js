@@ -62,6 +62,27 @@ app.get('/users', (req, res) => {
     .then(users => res.json(users))
     .catch(error => res.status(500).send(error));
 });
+
+app.get('/users/find', (req, res) => {
+    const email = req.query.email;
+    if (email) {
+        User.find({ email: email })
+        .then(users => {
+            if (users.length === 0) {
+                res.status(404).send({ error: 'User not found' });
+            } else if (users.length > 1) {
+                res.status(500).send({ error: 'Multiple users found' });
+            }
+            res.json(users[0]);
+        })
+        .catch(error => {
+            console.log("Received user search error: ", error);
+            res.status(500).send(error)
+        });
+    } else {
+        res.status(400).send({ error: 'Missing email query parameter' });
+    }
+})
             
 app.post('/users', (req, res) => {
     const user = new User(req.body);

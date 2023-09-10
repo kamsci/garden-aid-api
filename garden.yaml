@@ -1,0 +1,63 @@
+openapi: 3.0.0
+# Added by API Auto Mocking Plugin
+servers:
+  - description: Garden API
+    url: https://api.garden.com/v1/staging
+info:
+  description: This is the API to backend the Garden Aid React app using Okta Single Sign on Provider
+  version: "1.0.0"
+  title: Garden API
+  contact:
+    email: kc@kristacalderon.com
+tags:
+  - name: plantSearch
+    description: Calls for searching for plants
+paths:
+  /search:
+    get:
+      tags:
+        - plantSearch
+      summary: Gets plants based on search criteria
+      operationId: plantSearch
+      description: |
+        Takes a query and uses a 3rd party api to search for plants whose name matches the query
+      responses:
+        '200':
+          description: Page of plant results with data as the plants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Plant'
+                  lastPage:
+                    type: integer
+                  perPage:  
+                    type: integer 
+                  total:
+                    type: integer
+components:
+  schemas:
+    Plant:
+      type: object
+      properties:
+        id:
+          type: integer
+        refId:
+          type: string
+        common_name:
+          type: string
+        scientific_name:
+          type: string
+        imageUrls:
+          type: object
+          properties:
+            defaultlUrl:
+              type: string
+            smallUrl:
+              type: string
+            thumbnailUrl:
+              type: string
