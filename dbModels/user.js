@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
         required: true,
     },
 }, { strict: true })
-.index({ lastName: 1, firstName: 1 });
+.index({ email: 1});
 
 const User = mongoose.model("User", userSchema);
 
