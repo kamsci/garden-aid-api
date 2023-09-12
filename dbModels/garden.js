@@ -18,9 +18,8 @@ const gardenSchema = new mongoose.Schema({
     plants: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Plant",
-        unique: true,
     }],
-}, { strict: true });
+});
 
 const Garden = mongoose.model("Garden", gardenSchema);
 

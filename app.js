@@ -162,7 +162,10 @@ app.post('/gardens/users', (req, res) => {
     }
     garden.save()
     .then(garden => res.status(201).json(garden))
-    .catch(error => res.status(400).send(error));
+    .catch(error => {
+        console.log("Received garden save error:", error)
+        res.status(400).send(error);
+    });
 });
 
 app.delete('/gardens/:gardenId', (req, res) => {
