@@ -39,7 +39,7 @@ const PerenualClient = require('./clients/perenualClient');
 const perenualClient = new PerenualClient(process.env.PERENUAL_BASE_URL, process.env.PERENUAL_KEY);
 
 app.get('/', (req, res) => {
-    res.send('Welcome to the Plant API!')
+    res.send('Welcome to the Garden Aid API!')
 });
 
 const USER_PAGE_LIMIT = 5;

@@ -1,0 +1,27 @@
+version: '3'
+services:
+  react-frontend:
+    image: "kamsci/garden-app:dev"
+    # environment:
+    #   - NODE_ENV=dev
+    env_file:
+      - frontend.env
+    ports:
+      - "5173:5173"
+    depends_on:
+      - node-backend
+  node-backend:
+    build: .
+    command: npm run dev
+    volumes:
+     - type: bind
+       source: ./server
+       target: /app/server
+    tty: true
+    user: "node"
+    environment:
+      - NODE_ENV=dev
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
